@@ -3,7 +3,7 @@ const database = require("./database");
 /*
 On avait ça 
 const initialSql = "select * from users"
-et on a changé la cont pour que les mots de passe ne reviennent dans le GET
+et on a changé la const pour que les mots de passe ne reviennent dans le GET
 Idem dans le const getUsersById
 */
 const getUsers = (req, res) => {
@@ -105,10 +105,18 @@ const postUser = (req, res) => {
 on veut que les modifs soient faites par l'utilisatuer qui est identifié par son payload et son sub :
 else if (req.payload.sub !== id){
         res.status(403).send("Forbidden")
+        
+ou  if( id !== req.payload.sub) {
+    return res.sendStatus(403)
+  }
         */
 const updateUser = (req, res) => {
   const id = parseInt(req.params.id);
   const { firstname, lastname, email, city, language } = req.body;
+
+  if( id !== req.payload.sub) {
+    return res.sendStatus(403)
+  }
 
   database
     .query(
@@ -118,8 +126,6 @@ const updateUser = (req, res) => {
     .then(([result]) => {
       if (result.affectedRows === 0) {
         res.status(404).send("Not Found");
-      } else if (req.payload.sub !== id){
-        res.status(403).send("Forbidden")
       } else {
         res.sendStatus(204);
       }

@@ -1,4 +1,5 @@
 const database = require("./database");
+
 /*
 On avait ça 
 const initialSql = "select * from users"
@@ -42,6 +43,7 @@ const getUsers = (req, res) => {
     });
 };
 
+/* Pour la quête 08 on part de cette partie :*/
 const getUserById = (req, res) => {
   const id = parseInt(req.params.id);
 
@@ -59,6 +61,28 @@ const getUserById = (req, res) => {
       res.status(500).send("Error retrieving data from database");
     });
 };
+/*Pour vérifier avec l'email => on change l'id par le mail
+*/
+const getUserByEmailWithPasswordAndPassToNext = (req, res, next) => {
+  const {email} = req.body;
+
+  database
+    .query("select * from users where email = ?", [email])
+    .then(([users]) => {
+      if (users[0] != null) {
+        req.user = users[0];
+
+        next();
+      } else {
+        res.sendStatus(401);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error retrieving data from database");
+    });
+};
+
 
 const postUser = (req, res) => {
   const { firstname, lastname, email, city, language, hashedPassword } =
@@ -77,19 +101,25 @@ const postUser = (req, res) => {
       res.status(500).send("Error saving the user");
     });
 };
-
+/*On rajoute cette condition pour modifier et dans delete :
+on veut que les modifs soient faites par l'utilisatuer qui est identifié par son payload et son sub :
+else if (req.payload.sub !== id){
+        res.status(403).send("Forbidden")
+        */
 const updateUser = (req, res) => {
   const id = parseInt(req.params.id);
   const { firstname, lastname, email, city, language } = req.body;
 
   database
     .query(
-      "update movies set firstname = ?, lastname = ?, email = ?, city = ?, language = ? where id = ?",
+      "update users set firstname = ?, lastname = ?, email = ?, city = ?, language = ? where id = ?",
       [firstname, lastname, email, city, language, id]
     )
     .then(([result]) => {
       if (result.affectedRows === 0) {
         res.status(404).send("Not Found");
+      } else if (req.payload.sub !== id){
+        res.status(403).send("Forbidden")
       } else {
         res.sendStatus(204);
       }
@@ -108,6 +138,8 @@ const deleteUser = (req, res) => {
     .then(([result]) => {
       if (result.affectedRows === 0) {
         res.status(404).send("Not Found");
+      } else if (req.payload.sub !== id){
+        res.status(403).send("Forbidden")
       } else {
         res.sendStatus(204);
       }
@@ -121,6 +153,7 @@ const deleteUser = (req, res) => {
 module.exports = {
   getUsers,
   getUserById,
+  getUserByEmailWithPasswordAndPassToNext,
   postUser,
   updateUser,
   deleteUser,
